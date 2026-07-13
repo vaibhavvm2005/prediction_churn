@@ -9,7 +9,7 @@ from config import (
     AWS_ACCESS_KEY,
     AWS_SECRET_KEY,
     AWS_REGION,
-    BUCKET_NAME
+    BUCKET_NAME,
 )
 
 app = FastAPI(
@@ -36,7 +36,7 @@ LOCAL_MODEL_DIR = "registermodel/XGBoost"
 os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
 
 # =====================================================
-# Download Complete MLflow Model Folder
+# Download MLflow Model Folder
 # =====================================================
 
 def download_folder(bucket, prefix, local_dir):
@@ -61,10 +61,14 @@ def download_folder(bucket, prefix, local_dir):
 
             print(f"Downloading {key}")
 
-            s3.download_file(bucket, key, local_path)
+            s3.download_file(
+                bucket,
+                key,
+                local_path
+            )
 
 # =====================================================
-# Download Model
+# Download model if not exists
 # =====================================================
 
 mlmodel_file = os.path.join(LOCAL_MODEL_DIR, "MLmodel")
@@ -82,7 +86,7 @@ if not os.path.exists(mlmodel_file):
     print("Download Completed.")
 
 # =====================================================
-# Show Downloaded Files
+# Show downloaded files
 # =====================================================
 
 print("\nDownloaded Files:\n")
@@ -92,12 +96,16 @@ for root, dirs, files in os.walk(LOCAL_MODEL_DIR):
         print(os.path.join(root, file))
 
 # =====================================================
-# Load Model
+# Load MLflow Model
 # =====================================================
 
 MODEL_PATH = LOCAL_MODEL_DIR
 
+print(f"\nLoading model from: {MODEL_PATH}\n")
+
 model = mlflow.pyfunc.load_model(MODEL_PATH)
+
+print("Model Loaded Successfully.")
 
 # =====================================================
 # Request Schema
@@ -116,7 +124,7 @@ class CustomerData(BaseModel):
     Last_Interaction: int
 
 # =====================================================
-# Home
+# Home API
 # =====================================================
 
 @app.get("/")
@@ -138,5 +146,5 @@ def predict(data: CustomerData):
 
     return {
         "prediction": int(prediction[0]),
-        "churn": "Yes" if prediction[0] == 1 else "No"
+        "churn": "Yes" if int(prediction[0]) == 1 else "No"
     }
