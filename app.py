@@ -33,7 +33,6 @@ s3 = boto3.client(
 # =====================================================
 
 LOCAL_MODEL_DIR = "registermodel/XGBoost"
-
 os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
 
 # =====================================================
@@ -41,7 +40,6 @@ os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
 # =====================================================
 
 def download_folder(bucket, prefix, local_dir):
-
     paginator = s3.get_paginator("list_objects_v2")
 
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
@@ -57,21 +55,19 @@ def download_folder(bucket, prefix, local_dir):
                 continue
 
             relative_path = os.path.relpath(key, prefix)
-
             local_path = os.path.join(local_dir, relative_path)
 
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
             print(f"Downloading {key}")
 
-            s3.download_file(
-                bucket,
-                key,
-                local_path
-            )
+            s3.download_file(bucket, key, local_path)
 
-# Download only if MLmodel doesn't exist
-mlmodel_file = os.path.join(LOCAL_MODEL_DIR, "version-1", "MLmodel")
+# =====================================================
+# Download Model
+# =====================================================
+
+mlmodel_file = os.path.join(LOCAL_MODEL_DIR, "MLmodel")
 
 if not os.path.exists(mlmodel_file):
 
@@ -86,13 +82,20 @@ if not os.path.exists(mlmodel_file):
     print("Download Completed.")
 
 # =====================================================
-# Load MLflow Model
+# Show Downloaded Files
 # =====================================================
 
-MODEL_PATH = os.path.join(
-    LOCAL_MODEL_DIR,
-    "version-1"
-)
+print("\nDownloaded Files:\n")
+
+for root, dirs, files in os.walk(LOCAL_MODEL_DIR):
+    for file in files:
+        print(os.path.join(root, file))
+
+# =====================================================
+# Load Model
+# =====================================================
+
+MODEL_PATH = LOCAL_MODEL_DIR
 
 model = mlflow.pyfunc.load_model(MODEL_PATH)
 
@@ -101,7 +104,6 @@ model = mlflow.pyfunc.load_model(MODEL_PATH)
 # =====================================================
 
 class CustomerData(BaseModel):
-
     Age: int
     Gender: int
     Tenure: int
@@ -119,7 +121,6 @@ class CustomerData(BaseModel):
 
 @app.get("/")
 def home():
-
     return {
         "message": "Customer Churn Prediction API Running Successfully"
     }
@@ -131,7 +132,7 @@ def home():
 @app.post("/predict")
 def predict(data: CustomerData):
 
-    df = pd.DataFrame([data.dict()])
+    df = pd.DataFrame([data.model_dump()])
 
     prediction = model.predict(df)
 
