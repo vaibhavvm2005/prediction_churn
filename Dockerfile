@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8501
+EXPOSE 8000
 
-CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0"]
+CMD ["uvicorn", "app:app", "--host", "[IP_ADDRESS]", "--port", "8000"]pip install --upgrade pip
+
