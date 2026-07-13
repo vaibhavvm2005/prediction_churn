@@ -1,26 +1,20 @@
-fastapi==0.115.12
-uvicorn[standard]==0.34.0
+fastapi==0.115.6
+uvicorn==0.32.1
 gunicorn==23.0.0
 
-boto3==1.35.99
-botocore==1.35.99
-s3transfer==0.10.4
+boto3==1.35.70
+botocore==1.35.70
 
 mlflow==2.17.2
 
-cloudpickle==3.1.1
-
 numpy==1.26.4
 pandas==2.2.3
-scikit-learn==1.5.2
 scipy==1.13.1
-
+scikit-learn==1.5.2
 xgboost==2.1.4
 
-pydantic==2.10.6
 python-dotenv==1.0.1
+pydantic==2.10.3
+joblib==1.4.2
 
 requests==2.32.3
-PyYAML==6.0.2
-packaging==24.2
-joblib==1.4.2
