@@ -1,4 +1,5 @@
 import os
+import traceback
 import boto3
 import mlflow.pyfunc
 import pandas as pd
@@ -25,7 +26,7 @@ s3 = boto3.client(
     "s3",
     aws_access_key_id=AWS_ACCESS_KEY,
     aws_secret_access_key=AWS_SECRET_KEY,
-    region_name=AWS_REGION
+    region_name=AWS_REGION,
 )
 
 # =====================================================
@@ -61,11 +62,7 @@ def download_folder(bucket, prefix, local_dir):
 
             print(f"Downloading {key}")
 
-            s3.download_file(
-                bucket,
-                key,
-                local_path
-            )
+            s3.download_file(bucket, key, local_path)
 
 # =====================================================
 # Download model if not exists
@@ -80,32 +77,26 @@ if not os.path.exists(mlmodel_file):
     download_folder(
         BUCKET_NAME,
         "customer_churn/registermodel/XGBoost",
-        LOCAL_MODEL_DIR
+        LOCAL_MODEL_DIR,
     )
 
     print("Download Completed.")
 
 # =====================================================
-# Show downloaded files
+# Load Model
 # =====================================================
 
-print("\nDownloaded Files:\n")
+print("\nLoading MLflow Model...")
 
-for root, dirs, files in os.walk(LOCAL_MODEL_DIR):
-    for file in files:
-        print(os.path.join(root, file))
-
-# =====================================================
-# Load MLflow Model
-# =====================================================
-
-MODEL_PATH = LOCAL_MODEL_DIR
-
-print(f"\nLoading model from: {MODEL_PATH}\n")
-
-model = mlflow.pyfunc.load_model(MODEL_PATH)
+model = mlflow.pyfunc.load_model(LOCAL_MODEL_DIR)
 
 print("Model Loaded Successfully.")
+
+try:
+    print("Model Signature:")
+    print(model.metadata.signature)
+except Exception:
+    pass
 
 # =====================================================
 # Request Schema
@@ -124,7 +115,7 @@ class CustomerData(BaseModel):
     Last_Interaction: int
 
 # =====================================================
-# Home API
+# Home
 # =====================================================
 
 @app.get("/")
@@ -134,28 +125,46 @@ def home():
     }
 
 # =====================================================
-# Prediction API
+# Predict
 # =====================================================
 
 @app.post("/predict")
 def predict(data: CustomerData):
 
-    df = pd.DataFrame([{
-        "Age": data.Age,
-        "Gender": data.Gender,
-        "Tenure": data.Tenure,
-        "Usage Frequency": data.Usage_Frequency,
-        "Support Calls": data.Support_Calls,
-        "Payment Delay": data.Payment_Delay,
-        "Subscription Type": data.Subscription_Type,
-        "Contract Length": data.Contract_Length,
-        "Total Spend": data.Total_Spend,
-        "Last Interaction": data.Last_Interaction
-    }])
+    try:
 
-    prediction = model.predict(df)
+        df = pd.DataFrame([{
+            "Age": float(data.Age),
+            "Gender": int(data.Gender),
+            "Tenure": float(data.Tenure),
+            "Usage Frequency": float(data.Usage_Frequency),
+            "Support Calls": float(data.Support_Calls),
+            "Payment Delay": float(data.Payment_Delay),
+            "Subscription Type": int(data.Subscription_Type),
+            "Contract Length": int(data.Contract_Length),
+            "Total Spend": float(data.Total_Spend),
+            "Last Interaction": float(data.Last_Interaction)
+        }])
 
-    return {
-        "prediction": int(prediction[0]),
-        "churn": "Yes" if int(prediction[0]) == 1 else "No"
-    }
+        print("\n========== INPUT ==========")
+        print(df)
+        print(df.dtypes)
+
+        prediction = model.predict(df)
+
+        pred = int(prediction[0])
+
+        return {
+            "success": True,
+            "prediction": pred,
+            "churn": "Yes" if pred == 1 else "No"
+        }
+
+    except Exception as e:
+
+        traceback.print_exc()
+
+        return {
+            "success": False,
+            "error": str(e)
+        }
