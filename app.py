@@ -140,7 +140,18 @@ def home():
 @app.post("/predict")
 def predict(data: CustomerData):
 
-    df = pd.DataFrame([data.model_dump()])
+    df = pd.DataFrame([{
+        "Age": data.Age,
+        "Gender": data.Gender,
+        "Tenure": data.Tenure,
+        "Usage Frequency": data.Usage_Frequency,
+        "Support Calls": data.Support_Calls,
+        "Payment Delay": data.Payment_Delay,
+        "Subscription Type": data.Subscription_Type,
+        "Contract Length": data.Contract_Length,
+        "Total Spend": data.Total_Spend,
+        "Last Interaction": data.Last_Interaction
+    }])
 
     prediction = model.predict(df)
 
